@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <title>Firstblog // My New Hugo Site</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.68.3" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="John Doe" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://stone-tree.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Firstblog"/>
+<meta name="twitter:description" content="java7的HashMap造成死循环的通俗化讲解 在JDK1.7及以前的版本，如果在并发环境中使用HashMap保存数据，有可能会产生死循环的问题。产生这个问题是因为JDK1.7及以前的版本中，HashMap扩容采用的是头插入，1.8做的改进是采用尾插法，所以不会造成死循环的问题。 首先，来看1.7扩容的代码：
+//进行扩容时方法  void resize(int newCapacity) { Entry[] oldTable = table; int oldCapacity = oldTable.length; if (oldCapacity == MAXIMUM_CAPACITY) { threshold = Integer.MAX_VALUE; return; } Entry[] newTable = new Entry[newCapacity]; //多线程情况下，上面创建好新的数组，死循环就是在下面方法中产生的  transfer(newTable, initHashSeedAsNeeded(newCapacity)); table = newTable; threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY &#43; 1); } void transfer(Entry[] newTable, boolean rehash) { int newCapacity = newTable.length; for (Entry&lt;K,V&gt; e : table) { while(null != e) { Entry&lt;K,V&gt; next = e."/>
+
+    <meta property="og:title" content="Firstblog" />
+<meta property="og:description" content="java7的HashMap造成死循环的通俗化讲解 在JDK1.7及以前的版本，如果在并发环境中使用HashMap保存数据，有可能会产生死循环的问题。产生这个问题是因为JDK1.7及以前的版本中，HashMap扩容采用的是头插入，1.8做的改进是采用尾插法，所以不会造成死循环的问题。 首先，来看1.7扩容的代码：
+//进行扩容时方法  void resize(int newCapacity) { Entry[] oldTable = table; int oldCapacity = oldTable.length; if (oldCapacity == MAXIMUM_CAPACITY) { threshold = Integer.MAX_VALUE; return; } Entry[] newTable = new Entry[newCapacity]; //多线程情况下，上面创建好新的数组，死循环就是在下面方法中产生的  transfer(newTable, initHashSeedAsNeeded(newCapacity)); table = newTable; threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY &#43; 1); } void transfer(Entry[] newTable, boolean rehash) { int newCapacity = newTable.length; for (Entry&lt;K,V&gt; e : table) { while(null != e) { Entry&lt;K,V&gt; next = e." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://stone-tree.github.io/post/firstblog/" />
+<meta property="article:published_time" content="2020-03-27T18:20:53+08:00" />
+<meta property="article:modified_time" content="2020-03-27T18:20:53+08:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://stone-tree.github.io"><img class="app-header-avatar" src="/avatar.jpg" alt="John Doe" /></a>
+      <h1>My New Hugo Site</h1>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vehicula turpis sit amet elit pretium.</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Firstblog</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Mar 27, 2020
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          1 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <h2 id="java7的hashmap造成死循环的通俗化讲解">java7的HashMap造成死循环的通俗化讲解</h2>
+<p>在JDK1.7及以前的版本，如果在并发环境中使用HashMap保存数据，有可能会产生死循环的问题。产生这个问题是因为JDK1.7及以前的版本中，HashMap扩容采用的是头插入，1.8做的改进是采用尾插法，所以不会造成死循环的问题。
+首先，来看1.7扩容的代码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">//进行扩容时方法
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">resize</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> newCapacity<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        Entry<span style="color:#f92672">[]</span> oldTable <span style="color:#f92672">=</span> table<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> oldCapacity <span style="color:#f92672">=</span> oldTable<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>oldCapacity <span style="color:#f92672">==</span> MAXIMUM_CAPACITY<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            threshold <span style="color:#f92672">=</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        Entry<span style="color:#f92672">[]</span> newTable <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Entry<span style="color:#f92672">[</span>newCapacity<span style="color:#f92672">];</span>   
+        <span style="color:#75715e">//多线程情况下，上面创建好新的数组，死循环就是在下面方法中产生的
+</span><span style="color:#75715e"></span>        transfer<span style="color:#f92672">(</span>newTable<span style="color:#f92672">,</span> initHashSeedAsNeeded<span style="color:#f92672">(</span>newCapacity<span style="color:#f92672">));</span>
+        table <span style="color:#f92672">=</span> newTable<span style="color:#f92672">;</span>                                    
+        threshold <span style="color:#f92672">=</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)</span>Math<span style="color:#f92672">.</span><span style="color:#a6e22e">min</span><span style="color:#f92672">(</span>newCapacity <span style="color:#f92672">*</span> loadFactor<span style="color:#f92672">,</span> MAXIMUM_CAPACITY <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">transfer</span><span style="color:#f92672">(</span>Entry<span style="color:#f92672">[]</span> newTable<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> rehash<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> newCapacity <span style="color:#f92672">=</span> newTable<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> e <span style="color:#f92672">:</span> table<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">while</span><span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">!=</span> e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>                                
+                Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> next <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">;</span>                    
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rehash<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">==</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span> <span style="color:#f92672">?</span> 0 <span style="color:#f92672">:</span> hash<span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span><span style="color:#f92672">);</span>
+                <span style="color:#f92672">}</span>
+                <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> indexFor<span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span><span style="color:#f92672">,</span> newCapacity<span style="color:#f92672">);</span>
+                e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> newTable<span style="color:#f92672">[</span>i<span style="color:#f92672">];</span>
+                newTable<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> e<span style="color:#f92672">;</span>
+                e <span style="color:#f92672">=</span> next<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+</code></pre></div><p>其中最重要的就是进行transfer方法的部分，此部分详细说明了头插法的步骤和变量赋值变化：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">transfer</span><span style="color:#f92672">(</span>Entry<span style="color:#f92672">[]</span> newTable<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> rehash<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> newCapacity <span style="color:#f92672">=</span> newTable<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span>
+        <span style="color:#75715e">//遍历原HashMap数组，e是数组元素，若有链表衔接，就表示链表中的元素
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> e <span style="color:#f92672">:</span> table<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">while</span><span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">!=</span> e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">//这里就是将表示将e现在指代的元素的下一个元素赋给next这个变量
+</span><span style="color:#75715e"></span>                Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> next <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">;</span>                    
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rehash<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">==</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span> <span style="color:#f92672">?</span> 0 <span style="color:#f92672">:</span> hash<span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span><span style="color:#f92672">);</span>
+                <span style="color:#f92672">}</span>
+                <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> indexFor<span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span><span style="color:#f92672">,</span> newCapacity<span style="color:#f92672">);</span>
+                e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> newTable<span style="color:#f92672">[</span>i<span style="color:#f92672">];</span>
+                <span style="color:#75715e">//将e指代的元素放入新表中根据hash（key）计算过的位置
+</span><span style="color:#75715e"></span>                newTable<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> e<span style="color:#f92672">;</span>
+                <span style="color:#75715e">//e这时就会变成 Entry&lt;K,V&gt; next = e.next; 这里赋值的next的变量，也就是将上面的next                  赋值给e
+</span><span style="color:#75715e"></span>                e <span style="color:#f92672">=</span> next<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+</code></pre></div><p>单线程下是不会造成死循环的，只有在<strong>多线程下由于头插法的方式，就会造成死循环</strong>。</p>
+<h3 id="死循环过程">死循环过程：</h3>
+<p><!-- raw HTML omitted --></p>
+<ul>
+<li>
+<p>1.假设原数组只有的大小只有2，这时有key（3），key（7），key（5）按照头插法插入了index:1形成链表，顺序如图，<strong>此时e指向a，next指向b</strong>，即：</p>
+<pre><code>e=key（3）;
+next=key（7）;
+</code></pre></li>
+<li>
+<p>2.线程1执行完扩容后在 <strong>Entry&lt;K,V&gt; next = e.next;<strong>被挂起，紧接着线程2完成执行扩容的存放，到达如上状态，由于</strong>key（3），key（7）的rehash相同，所以他两个又被放入同一个index：3</strong></p>
+</li>
+<li>
+<p>3.此时线程1重新回来，继续执行，这时   e=key（3）;
+next=key（7）; 执行完循环中的头插法语句<strong>newTable[i] = e;</strong> e这时是key（3）后：线程1的index：3中的第一个头插入元素就是key（3）</p>
+<ul>
+<li><strong>key3、5、7在内存中只有一份实例在堆中，方法栈中只是存有这些实例的引用，而且两个线程的rehash（key）是一样的，所以这时e所指向的key（3）和next指向的key（7）是和线程2中的指向是一样的</strong></li>
+</ul>
+<p><!-- raw HTML omitted --></p>
+</li>
+<li>
+<p>4.接着执行e = next;next此时是key（7），则：e=key（7）;</p>
+<p><!-- raw HTML omitted --></p>
+</li>
+</ul>
+<pre><code>e=key（7）;
+next=key（7）;
+</code></pre><ul>
+<li>5.进入第二次循环，执行**Entry&lt;K,V&gt; next = e.next;**这时：按照reahash后的链表顺序（引用顺序）key（7）&ndash;&gt;key（3）</li>
+</ul>
+<pre><code>e=key（7）;
+next=key（3）;
+</code></pre><p><!-- raw HTML omitted --></p>
+<ul>
+<li>
+<p>6.然后顺序执行接下来的**newTable[i] = e;**进行头插法，在线程2中将e=key（7）头插入key（3）之前，形成链表</p>
+<p><!-- raw HTML omitted --></p>
+</li>
+<li>
+<p>7.接着执行e = next;next此时是key（3），则：e=key（3）;</p>
+<p><!-- raw HTML omitted --></p>
+</li>
+</ul>
+<pre><code>e=key（3）;
+next=key（3）;
+</code></pre><ul>
+<li>
+<p>8.接着进入第三次循环，这一次就会造成循环指向，进入死循环。执行**Entry&lt;K,V&gt; next = e.next;**这时的e=key（3），按照链表顺序，e.next=null也即是next=null</p>
+<p><!-- raw HTML omitted --></p>
+</li>
+<li>
+<p>9.接着进行头插法，**newTable[i] = e;**进行头插法，<strong>在线程2中将e=key（3）头插入key（7）之前，同时key（7）又会指向key（3）这样也就造成了循环指向，进入死循环</strong></p>
+</li>
+</ul>
+<p><!-- raw HTML omitted --></p>
+<h3 id="为甚么java8可以避免这个情况">为甚么java8可以避免这个情况：</h3>
+<ul>
+<li>造成死循环的原因就是在扩容的时候采用头插法，改变了原本链表的顺序</li>
+<li>java8中采用的是尾插法，不会改变原本的顺序，也就会形成死循环</li>
+<li><strong>当然，如果要进行多线程编程，还是推荐使用ConcurrentHashMap</strong></li>
+</ul>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>
